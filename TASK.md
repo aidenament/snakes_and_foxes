@@ -1,0 +1,93 @@
+# Tasks
+
+## Completed
+- [x] Create initial implementation of the game snakes and foxes (4/18/2025)
+  - [x] Board and piece rendering (concentric circles with nodes)
+  - [x] Dice rolls
+  - [x] Player movement with directional rules
+  - [x] Special spaces (snakes and foxes)
+  - [x] Win condition (reach outer circle and return to center)
+  - [x] Lose condition (exceed maximum turns)
+
+## Implementation Notes
+- The game board consists of 6 concentric circles
+- The innermost circle is a single large node (the center), while other circles contain 10 nodes each
+- Players start at the center node and need to reach any node in the outermost circle before returning to center to win
+- From the center node, a roll of 1 allows moving to any node in the first circle
+- Movement direction alternates between circles (clockwise/counter-clockwise)
+- Players can move to adjacent circles only with a dice roll of 1
+- The code is modular and easily modifiable for future enhancements
+
+## To Do
+- [x] Add snake and foxes activity (4/18/2025)
+  - [x] After player moves, find closest foxes to that player
+  - [x] Move foxes (from closest to furthest) one step toward the active player
+  - [x] If a fox lands on the player, remove that player piece from the game
+  - [x] If both player pieces are removed, player loses and game resets
+- [x] Fix piece overlap bug (4/18/2025)
+  - [x] Prevent pieces from occupying the same node (except for center node and enemy captures)
+  - [x] Update pathfinding to consider occupied nodes when calculating distances
+- [x] Increase timer for enemy piece movement (4/18/2025)
+  - [x] Modified movement_delay from 30 to 90  ,s to slow down snakes and foxes turns
+- [x] Fix piece capture notification bug (4/18/2025)
+  - [x] Added visual notification when a snake or fox captures a player piece
+  - [x] Display which enemy captured which player's piece
+- [x] Fix player piece capture bug (4/18/2025)
+  - [x] Modified switch_player method to check if the next player is active
+  - [x] Ensure captured players don't get turns
+  - [x] Set players to inactive immediately when they lose a piece
+  - [x] Remove captured players from the board display
+- [x] Fix snakes and foxes movement bug (4/18/2025)
+  - [x] Fixed issue where snakes and foxes weren't moving when no black pips were rolled
+  - [x] Updated the game logic to check for red triangles and green squiggles when no black pips are rolled
+  - [x] Updated the message displayed to the player when no black pips are rolled
+- [x] Improve game UI (4/18/2025)
+  - [x] Modified the UI to always display the active player's turn under the dice
+  - [x] Separated the turn display from the moves remaining display
+  - [x] Made moves remaining only appear after dice are rolled
+- [x] Fix center node piece display (4/18/2025)
+  - [x] Modified player rendering to display pieces side by side on the center node
+  - [x] Offset player pieces based on player number to prevent overlap
+  - [x] Maintained game logic allowing multiple pieces on center node
+  - [x] Added logic to prevent players from moving to center if a snake or fox is there
+  - [x] Modified snake and fox movement to capture all players on the center node
+- [x] Fix game restart functionality and add "Push Space to roll" text (4/18/2025)
+  - [x] Fixed issue where the game was not restarting properly
+  - [x] Added "Push Space to roll" text under the dice and above the current player turn display
+  - [x] Reset all necessary game state variables when restarting the game
+- [x] Fix game end condition bug when enemies capture both active players (4/18/2025)
+  - [x] Modified update_player_pieces method to check if both players are inactive
+  - [x] Added game over condition when both players have been captured
+  - [x] Ensured proper game re sar both players are captured
+- [x] Fix snakes and foxes reset bug (4/18/2025)
+  - [x] Modified reset_game method to reset snakes and foxes to their initial positions
+  - [x] Added test to verify that snakes and foxes are reset correctly
+- [x] Add win message display (4/18/2025)
+  - [x] Modified the render method to display a win message when a player wins
+  - [x] Used green color for the win message to distinguish it from the game over message
+- [x] Update piece rendering (4/18/2025)
+  - [x] Changed fox pieces to red triangles with their tip pointing toward the center
+  - [x] Changed snake pieces to green squiggles with their head facing toward the center
+  - [x] Removed numbers from player pieces and rendered them as simple circles
+- [ ] Add sound effects
+- [ ] Implement multiplayer functionality
+- [x] Add piece move animations (4/18/2025)
+  - [x] Implemented smooth animations for player pieces
+  - [x] Added arc path animations for movement within the same circle
+  - [x] Added straight line animations for movement between circles
+  - [x] Added animations for fox and snake pieces
+  - [x] Fixed bug where player couldn't move again after animation
+- [x] Fix piece rotation bug (4/18/2025)
+  - [x] Fixed issue where pieces were doing a full rotation to the next node instead of a partial rotation
+  - [x] Updated the animation path calculation to take the shortest arc path
+  - [x] Applied fix to both player pieces and fox/snake pieces
+- [x] Fix valid moves highlighting bug (4/18/2025)
+  - [x] Fixed issue where available nodes were still highlighted even when it was not the player's turn
+  - [x] Moved highlighting logic from player.py to game.py to ensure only the current player's valid moves are highlighted
+  - [x] Added condition to only show highlights when it's a player's turn (not during fox/snake movement)
+- [ ] Implement more advanced movement rules
+- [x] Fix enemy pieces rendering in center node (4/18/2025)
+  - [x] Modified fox and snake position calculation to apply offsets when in the center node
+  - [x] Positioned fox pieces at the top of the center node
+  - [x] Positioned snake pieces at the bottom of the center node
+  - [x] Ensured all pieces (players, foxes, and snakes) are visible when on the center node
