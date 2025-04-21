@@ -20,7 +20,7 @@ A Python implementation of the Snakes and Foxes board game from Wheel of Time us
    - After the player moves, the foxes move, then the snakes move
    - Each of the nearest m foxes move one space towards the active player where m is the number of red triangles
    - Each of the nearest n snakes move one space towards the active player where n is the number of green snakes
-   - If a snake or fox lands on the active player that piece is caputred
+   - If a snake or fox lands on the active player that piece is caputred and removed from play
    - Snakes and foxes ignore the non-active player
 8. The player wins by reaching the center after visiting any node in the outermost circle.
 9. The player loses the snakes and foxes capture both their pieces
