@@ -3,10 +3,10 @@ Game Engine for Snakes and Foxes
 """
 import pygame
 import math
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 from board import Board, BoardNode
 from player import Player
-from dice import Dice, FaceType
+from dice import Dice, FaceType, GameMode
 
 class Game:
     """
@@ -29,12 +29,17 @@ class Game:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Snakes and Foxes")
         
+        # Game mode selection
+        self.game_mode = GameMode.MEDIUM  # Default game mode
+        self.mode_selection_active = True  # Start with mode selection screen
+        self.mode_buttons: Dict[GameMode, pygame.Rect] = {}  # Store button rectangles
+        
         # Initialize game components
         self.board = Board(num_circles=num_circles, nodes_per_circle=nodes_per_circle)
         self.player1 = Player(self.board, player_num=1)  # White player
         self.player2 = Player(self.board, player_num=2)  # Black player
         self.current_player = self.player1  # Start with player 1
-        self.dice = Dice()
+        self.dice = Dice(game_mode=self.game_mode)
         
         # Initialize player pieces list in the board
         self.update_player_pieces()
@@ -71,6 +76,20 @@ class Game:
         Args:
             event: The pygame event to handle.
         """
+        # Handle game mode selection screen
+        if self.mode_selection_active:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                
+                # Check if any mode button was clicked
+                for mode, rect in self.mode_buttons.items():
+                    if rect.collidepoint(mouse_pos):
+                        self.game_mode = mode
+                        self.dice.set_game_mode(mode)
+                        self.mode_selection_active = False
+                        return
+            return
+            
         if self.game_over:
             # If game is over, only handle restart
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
@@ -93,8 +112,8 @@ class Game:
                 # Decrement moves remaining
                 self.moves_remaining -= 1
                 
-                # Check game conditions after each move
-                self.check_game_conditions()
+                # Game conditions will be checked when animation completes
+                # via the callback function set in move_player
                 
                 # If game is over, don't continue
                 if self.game_over:
@@ -149,6 +168,10 @@ class Game:
     
     def switch_player(self):
         """Switch to the other player."""
+        # Reset the previous_node for the current player before switching
+        # This ensures that the previous node from one turn doesn't affect the next turn
+        self.current_player.previous_node = None
+        
         if self.current_player == self.player1:
             # Switch to player 2 only if they are active
             if self.player2.active:
@@ -211,6 +234,10 @@ class Game:
         Args:
             target_node: The node to move to
         """
+        # Set the callback function to check game conditions when animation completes
+        self.current_player.on_animation_complete = self.check_game_conditions
+        
+        # Move the player
         self.current_player.move_to_node(target_node)
         
         # Update player pieces list in the board
@@ -233,6 +260,9 @@ class Game:
     
     def reset_game(self):
         """Reset the game to its initial state."""
+        # Show mode selection screen again
+        self.mode_selection_active = True
+        
         self.player1.reset()
         self.player2.reset()
         self.current_player = self.player1  # Start with player 1
@@ -528,6 +558,11 @@ class Game:
         # Clear the screen
         self.screen.fill((255, 255, 255))
         
+        # Render game mode selection screen if active
+        if self.mode_selection_active:
+            self._render_mode_selection()
+            return
+            
         # Draw the board
         self.board.render(self.screen)
         
@@ -553,8 +588,7 @@ class Game:
             
             if self.winner is not None:
                 # Player won the game
-                winner_text = f"Player {self.winner.player_num} Wins!"
-                game_over_text = font.render(winner_text, True, (0, 128, 0))  # Green for winning
+                game_over_text = font.render("You win", True, (0, 128, 0))  # Green for winning
             else:
                 # Game over without a winner (players captured or max turns reached)
                 if not self.current_player.active:
@@ -575,6 +609,13 @@ class Game:
         
         # Draw the dice
         self.dice.render(self.screen, dice_x, dice_y)
+        
+        # Display current game mode
+        mode_font = pygame.font.SysFont(None, 28)
+        mode_text = f"Game Mode: {self.game_mode.name}"
+        mode_color = (0, 0, 200)  # Blue
+        mode_surface = mode_font.render(mode_text, True, mode_color)
+        self.screen.blit(mode_surface, (dice_x, dice_y - 30))
         
         # Calculate the center position of the dice display
         dice_center_x = dice_x + (self.dice.size * 1.5) + (self.dice.spacing * 0.5)
@@ -640,3 +681,59 @@ class Game:
             )
             moves_rect = moves_text.get_rect(center=(dice_center_x, dice_bottom_y + 80))
             self.screen.blit(moves_text, moves_rect)
+    
+    def _render_mode_selection(self):
+        """Render the game mode selection screen."""
+        # Title
+        title_font = pygame.font.SysFont(None, 72)
+        title_text = title_font.render("Select Game Mode", True, (0, 0, 0))
+        title_rect = title_text.get_rect(center=(self.width // 2, 150))
+        self.screen.blit(title_text, title_rect)
+        
+        # Mode buttons
+        button_font = pygame.font.SysFont(None, 48)
+        button_width, button_height = 300, 100
+        button_spacing = 50
+        button_y_start = 300
+        
+        # Clear mode buttons dictionary
+        self.mode_buttons = {}
+        
+        # Define mode descriptions
+        mode_descriptions = {
+            GameMode.EASY: "Easy: Black pip (1/2), Red triangle (1/4), Green squiggle (1/4)",
+            GameMode.MEDIUM: "Medium: Black pip (1/3), Red triangle (1/3), Green squiggle (1/3)",
+            GameMode.HARD: "Hard: Black pip (1/6), Red triangle (5/12), Green squiggle (5/12)"
+        }
+        
+        # Define mode colors
+        mode_colors = {
+            GameMode.EASY: (100, 200, 100),    # Light green
+            GameMode.MEDIUM: (100, 100, 200),  # Light blue
+            GameMode.HARD: (200, 100, 100)     # Light red
+        }
+        
+        # Create a button for each game mode
+        for i, mode in enumerate(GameMode):
+            # Button position
+            button_x = (self.width - button_width) // 2
+            button_y = button_y_start + i * (button_height + button_spacing)
+            
+            # Create button rectangle
+            button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+            self.mode_buttons[mode] = button_rect
+            
+            # Draw button
+            pygame.draw.rect(self.screen, mode_colors[mode], button_rect)
+            pygame.draw.rect(self.screen, (0, 0, 0), button_rect, 3)  # Border
+            
+            # Draw button text
+            mode_text = button_font.render(mode.name, True, (0, 0, 0))
+            mode_rect = mode_text.get_rect(center=button_rect.center)
+            self.screen.blit(mode_text, mode_rect)
+            
+            # Draw description text
+            desc_font = pygame.font.SysFont(None, 24)
+            desc_text = desc_font.render(mode_descriptions[mode], True, (0, 0, 0))
+            desc_rect = desc_text.get_rect(center=(self.width // 2, button_y + button_height + 25))
+            self.screen.blit(desc_text, desc_rect)

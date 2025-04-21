@@ -27,6 +27,32 @@ class BoardNode:
         self.is_fox = False
         self.snake_target = None
         self.fox_target = None
+    
+    def __eq__(self, other):
+        """
+        Check if two nodes are equal based on their coordinates and indices.
+        
+        Args:
+            other: The other node to compare with
+            
+        Returns:
+            True if the nodes have the same coordinates and indices, False otherwise
+        """
+        if not isinstance(other, BoardNode):
+            return False
+        return (self.x == other.x and 
+                self.y == other.y and 
+                self.circle_idx == other.circle_idx and 
+                self.node_idx == other.node_idx)
+    
+    def __hash__(self):
+        """
+        Generate a hash value for the node based on its coordinates and indices.
+        
+        Returns:
+            A hash value for the node
+        """
+        return hash((self.x, self.y, self.circle_idx, self.node_idx))
         
     def get_position(self) -> Tuple[int, int]:
         """Get the screen coordinates of this node."""
@@ -269,13 +295,15 @@ class Board:
         # Use normal color for all nodes
         return self.normal_color
     
-    def get_valid_moves(self, current_node: BoardNode, dice_value: int) -> List[BoardNode]:
+    def get_valid_moves(self, current_node: BoardNode, dice_value: int, is_player: bool = True, previous_node: Optional[BoardNode] = None) -> List[BoardNode]:
         """
         Get valid moves from the current node based on dice value.
         
         Args:
             current_node: The current node
             dice_value: The dice roll value
+            is_player: Whether the current node is a player node
+            previous_node: The previous node the player was on (for multi-move turns)
             
         Returns:
             List of valid destination nodes
@@ -292,18 +320,55 @@ class Board:
             if dice_value == 1:
                 # Can move to any node in the first circle with a roll of 1
                 for first_circle_node in self.nodes[1]:
-                    # Check if the node is not occupied
-                    if not self.is_node_occupied(first_circle_node, current_node):
+                    # Check if the node is not occupied or is the previous node
+                    if not self.is_node_occupied(first_circle_node, current_node) or (previous_node and first_circle_node.x == previous_node.x and first_circle_node.y == previous_node.y):
                         valid_moves.append(first_circle_node)
             return valid_moves
         
-        # For other circles:
+        # Special case for outermost circle - allow movement to any node in the circle
+        if is_player and circle_idx == self.num_circles - 1:
+            # For dice value > 1, use the standard movement within the circle
+            if dice_value > 1:
+                direction = self.circle_directions[circle_idx]
+                new_node_idx = (node_idx + direction * dice_value) % len(self.nodes[circle_idx])
+                same_circle_node = self.get_node(circle_idx, new_node_idx)
+                
+                if same_circle_node and (not self.is_node_occupied(same_circle_node, current_node) or 
+                                      (previous_node and same_circle_node.x == previous_node.x and same_circle_node.y == previous_node.y)):
+                    valid_moves.append(same_circle_node)
+                return valid_moves
+            
+            # For dice value 1, allow movement ONLY to adjacent nodes in the proper direction
+            direction = self.circle_directions[circle_idx]
+            adj_node_idx = (node_idx + direction) % self.nodes_per_circle
+            adj_node = self.get_node(circle_idx, adj_node_idx)
+            
+            # Check if the adjacent node is the previous node or not occupied
+            if adj_node and (not self.is_node_occupied(adj_node, current_node) or 
+                           (previous_node and adj_node.x == previous_node.x and adj_node.y == previous_node.y)):
+                valid_moves.append(adj_node)
+            
+            # Also add the previous node if it exists and is not already in valid_moves
+            if previous_node and previous_node not in valid_moves:
+                valid_moves.append(previous_node)
+            
+            # Add inner circle node (for moving inward)
+            if circle_idx > 0:
+                inner_node = self.get_node(circle_idx - 1, node_idx)
+                if inner_node and (not self.is_node_occupied(inner_node, current_node) or 
+                                  (previous_node and inner_node.x == previous_node.x and inner_node.y == previous_node.y)):
+                    valid_moves.append(inner_node)
+            
+            return valid_moves
+        # For all other circles (not outermost):
         
         # 1. Move within the same circle
         direction = self.circle_directions[circle_idx]
         new_node_idx = (node_idx + direction * dice_value) % len(self.nodes[circle_idx])
         same_circle_node = self.get_node(circle_idx, new_node_idx)
-        if same_circle_node and not self.is_node_occupied(same_circle_node, current_node):
+        
+        if same_circle_node and (not self.is_node_occupied(same_circle_node, current_node) or 
+                               (previous_node and same_circle_node.x == previous_node.x and same_circle_node.y == previous_node.y)):
             valid_moves.append(same_circle_node)
         
         # 2. Move to adjacent circle (if dice value matches)
@@ -316,24 +381,54 @@ class Board:
                 else:
                     inner_node = self.get_node(circle_idx - 1, node_idx)
                 
-                if inner_node and not self.is_node_occupied(inner_node, current_node):
+                # Check if the node is not occupied or is the previous node
+                if inner_node and (not self.is_node_occupied(inner_node, current_node) or 
+                                 (previous_node and inner_node.x == previous_node.x and inner_node.y == previous_node.y)):
                     valid_moves.append(inner_node)
             
             # Move outward (if not at outermost circle)
             if circle_idx < self.num_circles - 1:
                 outer_node = self.get_node(circle_idx + 1, node_idx)
-                if outer_node and not self.is_node_occupied(outer_node, current_node):
-                    valid_moves.append(outer_node)
+                
+                # For players, allow movement to the outermost circle even if occupied by enemy pieces
+                if is_player and circle_idx == self.num_circles - 2:  # Moving to outermost circle
+                    # Check if the outer node is the previous node - if so, always allow movement to it
+                    if previous_node and outer_node.x == previous_node.x and outer_node.y == previous_node.y:
+                        valid_moves.append(outer_node)
+                    else:
+                        # Check if it's occupied by another player, snake, or fox
+                        is_occupied_by_player = False
+                        for player_node in self.player_pieces:
+                            if (outer_node.x == player_node.x and outer_node.y == player_node.y and 
+                                (current_node.x != player_node.x or current_node.y != player_node.y)):
+                                is_occupied_by_player = True
+                                break
+                        
+                        # Check if the node is occupied by a fox or snake
+                        is_occupied_by_enemy = False
+                        for fox_node in self.fox_pieces:
+                            if outer_node.x == fox_node.x and outer_node.y == fox_node.y:
+                                is_occupied_by_enemy = True
+                                break
+                        
+                        for snake_node in self.snake_pieces:
+                            if outer_node.x == snake_node.x and outer_node.y == snake_node.y:
+                                is_occupied_by_enemy = True
+                                break
+                        
+                        if not is_occupied_by_player and not is_occupied_by_enemy:
+                            valid_moves.append(outer_node)
         
         return valid_moves
     
-    def get_connected_nodes(self, current_node: BoardNode, is_player: bool = False) -> List[BoardNode]:
+    def get_connected_nodes(self, current_node: BoardNode, is_player: bool = False, previous_node: Optional[BoardNode] = None) -> List[BoardNode]:
         """
         Get all nodes that have a directed edge connecting to the current node.
         
         Args:
             current_node: The current node
             is_player: Whether the current node is a player node
+            previous_node: The previous node the player was on (for multi-move turns)
             
         Returns:
             List of connected nodes
@@ -348,12 +443,55 @@ class Board:
         if circle_idx == 0:
             # From center, can move to any node in the first circle
             for first_circle_node in self.nodes[1]:
-                # Check if the node is not occupied
-                if not self.is_node_occupied(first_circle_node, current_node):
+                # Check if the node is not occupied or is the previous node
+                if not self.is_node_occupied(first_circle_node, current_node) or (previous_node and first_circle_node.x == previous_node.x and first_circle_node.y == previous_node.y):
                     connected_nodes.append(first_circle_node)
             return connected_nodes
         
-        # For other circles:
+        # Special case for outermost circle
+        if is_player and circle_idx == self.num_circles - 1:
+            # Only allow movement to the adjacent node in the direction of rotation
+            direction = self.circle_directions[circle_idx]
+            adj_node_idx = (node_idx + direction) % self.nodes_per_circle
+            adj_node = self.get_node(circle_idx, adj_node_idx)
+            
+            # Check if the adjacent node is not occupied by a player or enemy
+            if adj_node:
+                is_occupied_by_player = False
+                for player_node in self.player_pieces:
+                    if (adj_node.x == player_node.x and adj_node.y == player_node.y and 
+                        (current_node.x != player_node.x or current_node.y != player_node.y)):
+                        is_occupied_by_player = True
+                        break
+                
+                is_occupied_by_enemy = False
+                for fox_node in self.fox_pieces:
+                    if adj_node.x == fox_node.x and adj_node.y == fox_node.y:
+                        is_occupied_by_enemy = True
+                        break
+                
+                for snake_node in self.snake_pieces:
+                    if adj_node.x == snake_node.x and adj_node.y == snake_node.y:
+                        is_occupied_by_enemy = True
+                        break
+                
+                if not is_occupied_by_player and not is_occupied_by_enemy:
+                    connected_nodes.append(adj_node)
+            
+            # Also add the previous node if it exists and is not already in connected_nodes
+            if previous_node and previous_node not in connected_nodes:
+                connected_nodes.append(previous_node)
+            
+            # Add inner circle node (for moving inward)
+            if circle_idx > 0:
+                inner_node = self.get_node(circle_idx - 1, node_idx)
+                if inner_node and (not self.is_node_occupied(inner_node, current_node) or 
+                                  (previous_node and inner_node.x == previous_node.x and inner_node.y == previous_node.y)):
+                    connected_nodes.append(inner_node)
+            
+            return connected_nodes
+        
+        # For all other circles (not outermost):
         
         # 1. Move within the same circle (only in the direction of the arrows)
         direction = self.circle_directions[circle_idx]
@@ -361,7 +499,9 @@ class Board:
         # Only allow movement in the direction of the arrows
         next_node_idx = (node_idx + direction) % len(self.nodes[circle_idx])
         next_node = self.get_node(circle_idx, next_node_idx)
-        if next_node and not self.is_node_occupied(next_node, current_node):
+        
+        if next_node and (not self.is_node_occupied(next_node, current_node) or 
+                         (previous_node and next_node.x == previous_node.x and next_node.y == previous_node.y)):
             connected_nodes.append(next_node)
         
         # 2. Move to adjacent circles
@@ -374,7 +514,8 @@ class Board:
             else:
                 inner_node = self.get_node(circle_idx - 1, node_idx)
             
-            if inner_node and not self.is_node_occupied(inner_node, current_node):
+            if inner_node and (not self.is_node_occupied(inner_node, current_node) or 
+                              (previous_node and inner_node.x == previous_node.x and inner_node.y == previous_node.y)):
                 connected_nodes.append(inner_node)
         
         # Move outward (if not at outermost circle)
@@ -383,17 +524,35 @@ class Board:
             
             # For players, allow movement to the outermost circle even if occupied by enemy pieces
             if is_player and circle_idx == self.num_circles - 2:  # Moving to outermost circle
-                # Only check if it's occupied by another player, not by enemy pieces
-                is_occupied_by_player = False
-                for player_node in self.player_pieces:
-                    if (outer_node.x == player_node.x and outer_node.y == player_node.y and 
-                        (current_node.x != player_node.x or current_node.y != player_node.y)):
-                        is_occupied_by_player = True
-                        break
-                
-                if not is_occupied_by_player:
+                # Check if the outer node is the previous node - if so, always allow movement to it
+                if previous_node and outer_node.x == previous_node.x and outer_node.y == previous_node.y:
                     connected_nodes.append(outer_node)
-            elif outer_node and not self.is_node_occupied(outer_node, current_node):
+                else:
+                    # Only check if it's occupied by another player, not by enemy pieces
+                    is_occupied_by_player = False
+                    for player_node in self.player_pieces:
+                        if (player_node == outer_node and 
+                            current_node != player_node):
+                            is_occupied_by_player = True
+                            break
+                    
+                    # Check if the node is occupied by a fox or snake
+                    is_occupied_by_enemy = False
+                    for fox_node in self.fox_pieces:
+                        if outer_node.x == fox_node.x and outer_node.y == fox_node.y:
+                            is_occupied_by_enemy = True
+                            break
+                    
+                    for snake_node in self.snake_pieces:
+                        if outer_node.x == snake_node.x and outer_node.y == snake_node.y:
+                            is_occupied_by_enemy = True
+                            break
+                    
+                    if not is_occupied_by_player and not is_occupied_by_enemy:
+                        connected_nodes.append(outer_node)
+            # For all other cases
+            elif outer_node and (not self.is_node_occupied(outer_node, current_node) or 
+                               (previous_node and outer_node.x == previous_node.x and outer_node.y == previous_node.y)):
                 connected_nodes.append(outer_node)
         
         return connected_nodes
@@ -834,6 +993,73 @@ class Board:
                 circle_radius,
                 1  # Line width
             )
+            
+            # Add text around the outermost circle
+            if circle_idx == self.num_circles - 1:
+                # Define the four phrases to display
+                phrases = [
+                    "Curage to strengthen",
+                    "Iron to bind",
+                    "Music to dazzle",
+                    "Fire to blind"
+                ]
+                
+                # Create font for the text - increased font size
+                text_font = pygame.font.SysFont(None, 30)
+                
+                # Position the text at top-left, top-right, bottom-right, bottom-left positions around the circle
+                # Exact corner angles (in radians)
+                corner_angles = [
+                    math.pi * 5 / 4,  # top-left (135 degrees)
+                    math.pi * 7 / 4,  # top-right (315 degrees)
+                    math.pi / 4,      # bottom-right (45 degrees)
+                    math.pi * 3 / 4   # bottom-left (225 degrees)
+                ]
+                
+                # Add more distance from the circle
+                text_radius = circle_radius + 40  # Increased from 25 to 40
+                
+                for i, phrase in enumerate(phrases):
+                    # Calculate the total angle span for the phrase
+                    # Use a fixed angle span to ensure consistent spacing
+                    total_angle_span = math.pi / 6  # 30 degrees
+                    
+                    # Calculate the start angle (so the middle of the phrase is at the corner)
+                    center_angle = corner_angles[i]
+                    start_angle = center_angle - total_angle_span / 2
+                    
+                    # Ensure consistent character spacing by using the same spacing for all phrases
+                    char_angle = total_angle_span / max(len(phrases[0]), len(phrases[1]), len(phrases[2]), len(phrases[3]))
+                    
+                    # Adjust start angle to center the phrase
+                    start_angle = center_angle - (char_angle * len(phrase)) / 2
+                    
+                    # Render each character separately
+                    for j, char in enumerate(phrase):
+                        # Calculate the angle for this character - use consistent spacing
+                        angle = start_angle + char_angle * j
+                        
+                        # Render the character
+                        char_surface = text_font.render(char, True, (50, 50, 50))
+                        
+                        # Calculate position for the character
+                        char_x = self.center_x + text_radius * math.cos(angle)
+                        char_y = self.center_y + text_radius * math.sin(angle)
+                        
+                        # Calculate rotation angle for radial text
+                        rotation_angle = angle + math.pi/2
+                        
+                        # Rotate the character so the bottom points toward the center
+                        rotated_surface = pygame.transform.rotate(
+                            char_surface, 
+                            -rotation_angle * 180 / math.pi  # Convert to degrees and negate for pygame rotation
+                        )
+                        
+                        # Position the rotated text correctly (centered at the calculated position)
+                        screen.blit(rotated_surface, (
+                            char_x - rotated_surface.get_width() / 2,
+                            char_y - rotated_surface.get_height() / 2
+                        ))
         
         # Draw connecting arcs between adjacent nodes in the same circle (skip innermost)
         for circle_idx in range(1, self.num_circles):

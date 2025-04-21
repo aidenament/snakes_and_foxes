@@ -13,19 +13,28 @@ class FaceType(Enum):
     RED_TRIANGLE = 1
     GREEN_SQUIGGLE = 2
 
+class GameMode(Enum):
+    """Game difficulty modes"""
+    EASY = 0    # Black pip: 1/2, Red triangle: 1/4, Green squiggle: 1/4
+    MEDIUM = 1  # Black pip: 1/3, Red triangle: 1/3, Green squiggle: 1/3
+    HARD = 2    # Black pip: 1/6, Red triangle: 5/12, Green squiggle: 5/12
+
 class Dice:
     """
     Represents a set of six dice for the Snakes and Foxes game.
     
-    Each die has three equally likely faces:
+    Each die has three faces with probabilities determined by the game mode:
     - Black pip
     - Upside down red triangle
     - Vertical green squiggle line
     """
     
-    def __init__(self):
+    def __init__(self, game_mode: GameMode = GameMode.MEDIUM):
         """
         Initialize the dice with default values.
+        
+        Args:
+            game_mode: The game difficulty mode that determines dice probabilities
         """
         self.num_dice = 6  # Number of dice
         self.dice_values = [FaceType.BLACK_PIP] * self.num_dice  # Current displayed values
@@ -33,6 +42,7 @@ class Dice:
         self.size = 60  # Size of each die square
         self.spacing = 10  # Spacing between dice
         self.color = (255, 255, 255)  # White background
+        self.game_mode = game_mode  # Game difficulty mode
         
         # Animation properties
         self.is_rolling = False
@@ -41,29 +51,80 @@ class Dice:
     
     def roll(self) -> List[FaceType]:
         """
-        Roll all six dice at once.
+        Roll all six dice at once with probabilities based on game mode.
         
         Returns:
             List of dice values.
         """
-        # Roll each die with equal probability for each face
-        self.final_values = [random.choice(list(FaceType)) for _ in range(self.num_dice)]
+        self.final_values = []
+        
+        # Roll each die with probabilities based on game mode
+        for _ in range(self.num_dice):
+            face = self._roll_single_die()
+            self.final_values.append(face)
+            
         self.is_rolling = True
         self.roll_frames = 0
         return self.final_values  # Return the final values for counting
+    
+    def _roll_single_die(self) -> FaceType:
+        """
+        Roll a single die with probabilities based on game mode.
+        
+        Returns:
+            The face value of the die.
+        """
+        # Generate a random number between 0 and 11 (for finest probability control)
+        roll = random.randint(0, 11)
+        
+        if self.game_mode == GameMode.EASY:
+            # EASY: Black pip (1/2), Red triangle (1/4), Green squiggle (1/4)
+            if roll < 6:  # 0-5 (6/12 = 1/2)
+                return FaceType.BLACK_PIP
+            elif roll < 9:  # 6-8 (3/12 = 1/4)
+                return FaceType.RED_TRIANGLE
+            else:  # 9-11 (3/12 = 1/4)
+                return FaceType.GREEN_SQUIGGLE
+                
+        elif self.game_mode == GameMode.MEDIUM:
+            # MEDIUM: Equal probability (1/3) for each face
+            if roll < 4:  # 0-3 (4/12 = 1/3)
+                return FaceType.BLACK_PIP
+            elif roll < 8:  # 4-7 (4/12 = 1/3)
+                return FaceType.RED_TRIANGLE
+            else:  # 8-11 (4/12 = 1/3)
+                return FaceType.GREEN_SQUIGGLE
+                
+        else:  # GameMode.HARD
+            # HARD: Black pip (1/6), Red triangle (5/12), Green squiggle (5/12)
+            if roll < 2:  # 0-1 (2/12 = 1/6)
+                return FaceType.BLACK_PIP
+            elif roll < 7:  # 2-6 (5/12)
+                return FaceType.RED_TRIANGLE
+            else:  # 7-11 (5/12)
+                return FaceType.GREEN_SQUIGGLE
     
     def update(self) -> None:
         """Update the dice animation if they're rolling."""
         if self.is_rolling:
             self.roll_frames += 1
             if self.roll_frames < self.roll_duration:
-                # Show random values during animation
+                # Show random values during animation (equal probability for visual effect)
                 self.dice_values = [random.choice(list(FaceType)) for _ in range(self.num_dice)]
             else:
                 # End of animation
                 self.is_rolling = False
                 # Restore the final values
                 self.dice_values = self.final_values.copy()
+    
+    def set_game_mode(self, mode: GameMode) -> None:
+        """
+        Set the game mode which determines dice probabilities.
+        
+        Args:
+            mode: The new game mode
+        """
+        self.game_mode = mode
     
     def _draw_black_pip(self, screen: pygame.Surface, x: int, y: int) -> None:
         """Draw a black pip (circle) on the die."""
