@@ -1,6 +1,6 @@
 # Snakes and Foxes Game
 
-A Python implementation of the Snakes and Foxes board game using Pygame.
+A Python implementation of the Snakes and Foxes board game from Wheel of Time using PyGame.
 
 ## Game Rules
 
