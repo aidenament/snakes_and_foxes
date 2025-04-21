@@ -85,9 +85,37 @@
   - [x] Fixed issue where available nodes were still highlighted even when it was not the player's turn
   - [x] Moved highlighting logic from player.py to game.py to ensure only the current player's valid moves are highlighted
   - [x] Added condition to only show highlights when it's a player's turn (not during fox/snake movement)
+- [x] Fix player movement bug with multiple moves (4/21/2025)
+  - [x] Fixed issue where previous node was incorrectly excluded from valid moves during multi-move turns
+  - [x] Added tracking of previous node in Player class
+  - [x] Modified Board.get_connected_nodes to consider previous node as valid destination
+  - [x] Reset previous_node when switching players to prevent affecting next turn
+- [x] Fix player movement to outside ring bug (4/21/2025)
+  - [x] Fixed issue where players couldn't move to the outside ring even when it was open
+  - [x] Modified the condition in Board.get_connected_nodes to correctly check if the outer node is the previous node
+  - [x] Changed logical OR to logical AND in the condition that checks if the outer node is not the previous node
+- [x] Fix outer circle movement bugs (4/21/2025)
+  - [x] Fixed issue where players sometimes couldn't move into an open space on the outer circle
+  - [x] Fixed issue where moving adjacently on the outside circle would sometimes move the player to an inner circle
+  - [x] Modified the previous_node check in get_connected_nodes to properly allow movement to the previous node
+  - [x] Improved the logic for checking if a node is occupied by another player
+- [x] Fix win game mechanic bug (4/21/2025)
+  - [x] Fixed issue where the game only ends at the end of the turn when a player returns to the center
+  - [x] Added callback function to Player class to notify the game when animation completes
+  - [x] Modified Game.move_player to set the callback function to check game conditions
+  - [x] Removed immediate call to check_game_conditions in handle_event method
 - [ ] Implement more advanced movement rules
 - [x] Fix enemy pieces rendering in center node (4/18/2025)
   - [x] Modified fox and snake position calculation to apply offsets when in the center node
   - [x] Positioned fox pieces at the top of the center node
   - [x] Positioned snake pieces at the bottom of the center node
   - [x] Ensured all pieces (players, foxes, and snakes) are visible when on the center node
+- [x] Add different game modes (4/21/2025)
+  - [x] Implemented Easy, Medium, and Hard difficulty levels
+  - [x] Added game mode selection screen at the start of the game
+  - [x] Modified dice probabilities based on game mode:
+    - [x] Easy: Black pip (1/2), Red triangle (1/4), Green squiggle (1/4)
+    - [x] Medium: Equal probability (1/3) for each face
+    - [x] Hard: Black pip (1/6), Red triangle (5/12), Green squiggle (5/12)
+  - [x] Added game mode display on the game screen
+  - [x] Created tests to verify dice probabilities for each game mode

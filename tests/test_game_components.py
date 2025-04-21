@@ -364,6 +364,107 @@ class TestBoard:
 class TestPlayer:
     """Tests for the Player class"""
     
+    def test_previous_node_in_valid_moves(self):
+        """Test that the previous node is included in valid moves during multi-move turns"""
+        board = Board(num_circles=6, nodes_per_circle=10)
+        player = Player(board)
+        
+        # Move player to a node in the first circle
+        first_circle_node = board.get_node(1, 0)
+        player.current_node = first_circle_node
+        
+        # Get valid moves for the first move
+        player.get_connected_nodes()
+        first_move_valid_nodes = player.valid_moves.copy()
+        
+        # Pick a node to move to
+        second_circle_node = None
+        for node in first_move_valid_nodes:
+            if node.circle_idx == 2:  # Find a node in the second circle
+                second_circle_node = node
+                break
+        
+        assert second_circle_node is not None, "Could not find a node in the second circle"
+        
+        # Move player to the second circle
+        player.move_to_node(second_circle_node)
+        
+        # Manually complete the animation for the test
+        player.is_moving = False
+        player.current_node = second_circle_node
+        
+        # Get valid moves for the second move
+        player.get_connected_nodes()
+        second_move_valid_nodes = player.valid_moves
+        
+        # Check that the previous node (first_circle_node) is included in valid moves
+        assert first_circle_node in second_move_valid_nodes, "Previous node should be included in valid moves"
+        
+        # Move player back to the first circle node
+        player.move_to_node(first_circle_node)
+        
+        # Manually complete the animation for the test
+        player.is_moving = False
+        player.current_node = first_circle_node
+        
+        # Get valid moves for the third move
+        player.get_connected_nodes()
+        third_move_valid_nodes = player.valid_moves
+        
+        # Check that the previous node (second_circle_node) is included in valid moves
+        assert second_circle_node in third_move_valid_nodes, "Previous node should be included in valid moves"
+    
+    def test_movement_to_outside_ring(self):
+        """Test that players can move to the outside ring when it's the previous node"""
+        board = Board(num_circles=6, nodes_per_circle=10)
+        player = Player(board)
+        
+        # Move player to a node in the second-to-last circle (circle 4)
+        second_to_last_circle_node = board.get_node(4, 0)
+        player.current_node = second_to_last_circle_node
+        
+        # Get valid moves for the first move
+        player.get_connected_nodes()
+        first_move_valid_nodes = player.valid_moves.copy()
+        
+        # Find the node in the outermost circle
+        outermost_circle_node = None
+        for node in first_move_valid_nodes:
+            if node.circle_idx == 5:  # Outermost circle (0-indexed)
+                outermost_circle_node = node
+                break
+        
+        assert outermost_circle_node is not None, "Could not find a node in the outermost circle"
+        
+        # Move player to the outermost circle
+        player.move_to_node(outermost_circle_node)
+        
+        # Manually complete the animation for the test
+        player.is_moving = False
+        player.current_node = outermost_circle_node
+        player.has_reached_outer_circle = True  # Set this flag as it would be in the game
+        
+        # Get valid moves for the second move
+        player.get_connected_nodes()
+        second_move_valid_nodes = player.valid_moves
+        
+        # Check that the previous node (second_to_last_circle_node) is included in valid moves
+        assert second_to_last_circle_node in second_move_valid_nodes, "Previous node in second-to-last circle should be included in valid moves"
+        
+        # Move player back to the second-to-last circle
+        player.move_to_node(second_to_last_circle_node)
+        
+        # Manually complete the animation for the test
+        player.is_moving = False
+        player.current_node = second_to_last_circle_node
+        
+        # Get valid moves for the third move
+        player.get_connected_nodes()
+        third_move_valid_nodes = player.valid_moves
+        
+        # Check that the previous node (outermost_circle_node) is included in valid moves
+        assert outermost_circle_node in third_move_valid_nodes, "Previous node in outermost circle should be included in valid moves"
+    
     def test_rotation_animation(self):
         """Test that the rotation animation uses pi/5 for rotation and correct direction"""
         import pygame
