@@ -9,18 +9,21 @@ A Python implementation of the Snakes and Foxes board game from Wheel of Time us
 3. Players start at the center node and need to:
    - First reach any node in the outermost circle
    - Then return to the center node to win
-4. Movement is determined by rolling a six-sided die.
+4. Movement is determined by rolling a six six-sided dice.
 5. Movement rules:
-   - From the center node, a roll of 1 allows moving to any node in the first circle
-   - In other circles, players can move around their current circle by the number of spaces shown on the dice
+   = For each black pip the player gets one move
+   - From the center node, players can move to any node in the first circle
+   - In other circles, players can move around their current circle, move out to the next circle or in to the previous circle.
    - Movement direction alternates between circles (clockwise/counter-clockwise)
-   - Players can move to adjacent circles only with a dice roll of 1
-6. The board contains snakes and foxes:
-   - Landing on a snake sends the player back to the previous circle
-   - Landing on a fox allows the player to move forward to the next circle
-7. The player wins by reaching the center after visiting any node in the outermost circle.
-8. The player loses if they exceed 100 turns without winning.
-
+   - The player has two pieces, and the alternate between moving pieces unless one is captured
+7. The board contains snakes and foxes:
+   - After the player moves, the foxes move, then the snakes move
+   - Each of the nearest m foxes move one space towards the active player where m is the number of red triangles
+   - Each of the nearest n snakes move one space towards the active player where n is the number of green snakes
+   - If a snake or fox lands on the active player that piece is caputred
+   - Snakes and foxes ignore the non-active player
+8. The player wins by reaching the center after visiting any node in the outermost circle.
+9. The player loses the snakes and foxes capture both their pieces
 ## Installation
 
 1. Clone this repository:
