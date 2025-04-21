@@ -9,7 +9,7 @@ A Python implementation of the Snakes and Foxes board game from Wheel of Time us
 3. Players start at the center node and need to:
    - First reach any node in the outermost circle
    - Then return to the center node to win
-4. Movement is determined by rolling a six six-sided dice.
+4. Movement is determined by rolling six six-sided dice.
 5. Movement rules:
    = For each black pip the player gets one move
    - From the center node, players can move to any node in the first circle
