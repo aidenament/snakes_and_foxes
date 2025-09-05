@@ -9,6 +9,7 @@ import pygame
 import sys
 import argparse
 from game import Game
+from pygame_utils import init_pygame_no_audio
 
 def parse_arguments():
     """
@@ -32,8 +33,8 @@ def main():
     # Parse command line arguments
     args = parse_arguments()
     
-    # Initialize pygame
-    pygame.init()
+    # Initialize pygame modules individually to avoid audio/ALSA errors
+    init_pygame_no_audio()
     
     # Create game instance with customizable parameters
     game = Game(num_circles=args.circles, nodes_per_circle=args.nodes)

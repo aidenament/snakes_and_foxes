@@ -19,9 +19,10 @@ class TestBoard:
         """Test that the piece rotation animation uses pi/5 for rotation and correct direction"""
         import pygame
         import math
+        from pygame_utils import init_pygame_no_audio
         
-        # Initialize pygame for the test
-        pygame.init()
+        # Initialize pygame for the test (without audio to avoid ALSA errors)
+        init_pygame_no_audio()
         
         # Create a board
         board = Board(num_circles=6, nodes_per_circle=10)
