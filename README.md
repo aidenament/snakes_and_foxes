@@ -37,6 +37,12 @@ cd snakes_and_foxes
 pip install -r requirements.txt
 ```
 
+### Audio Configuration
+
+This game runs without audio to avoid ALSA configuration errors in headless environments. The game initializes only the pygame modules needed for graphics (display and font), which eliminates "ALSA lib" errors that can occur when audio devices are not available.
+
+If you encounter ALSA errors in other parts of the codebase, you can use the `pygame_utils.init_pygame_no_audio()` function instead of `pygame.init()`.
+
 ## How to Play
 
 1. Run the game:
