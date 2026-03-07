@@ -1,78 +1,66 @@
-# Snakes and Foxes Game
+# Snakes and Foxes
 
-A Python implementation of the Snakes and Foxes board game from Wheel of Time using PyGame.
+A polished browser adaptation of the Wheel of Time board game, served by FastAPI and managed with `uv`.
+
+## Stack
+
+- Python + FastAPI backend
+- Canvas-based browser UI
+- Pure Python rules engine with graph-based enemy pathfinding
+- `uv` for dependency management, locking, and task execution
 
 ## Game Rules
 
-1. The game is played on a board with 6 concentric circles.
-2. The innermost circle is a single large node (the center), while other circles contain 10 nodes each.
-3. Players start at the center node and need to:
-   - First reach any node in the outermost circle
-   - Then return to the center node to win
-4. Movement is determined by rolling six six-sided dice.
-5. Movement rules:
-   - For each black pip the active player gets one move
-   - From the center node, players can move to any node in the first circle
-   - In other circles, players can move around their current circle, move out to the next circle or in to the previous circle.
-   - Movement direction alternates between circles (clockwise/counter-clockwise)
-   - The player has two pieces, and they alternate between which piece is active unless one is captured
-7. The board contains snakes and foxes:
-   - After the player moves, the foxes move, then the snakes move
-   - Each of the nearest m foxes move one space towards the active player where m is the number of red triangles
-   - Each of the nearest n snakes move one space towards the active player where n is the number of green snakes
-   - If a snake or fox lands on the active player that piece is caputred and removed from play
-   - Snakes and foxes ignore the non-active player
-8. The player wins by reaching the center after visiting any node in the outermost circle.
-9. The player loses the snakes and foxes capture both their pieces
-## Installation
+- The board has six concentric circles.
+- The center is a single node. Every outer circle has ten nodes.
+- You control two player pieces. Only one is active per turn.
+- The active piece alternates each turn while both pieces are alive.
+- A piece wins if it reaches the outer ring at least once and later returns to the center.
+- Six dice are rolled each turn:
+  - `black_pip` results grant movement steps
+  - `red_triangle` results activate foxes
+  - `green_squiggle` results activate snakes
+- The active piece may move one edge per black pip:
+  - from center to any node on the first ring
+  - along the current ring in that ring's direction
+  - inward one ring
+  - outward one ring
+- After player movement, the nearest foxes move first, then the nearest snakes.
+- Enemies always path toward the active piece using board distance, not screen distance.
+- If both player pieces are captured, the game is lost.
 
-1. Clone this repository:
-```
-git clone https://github.com/yourusername/snakes_and_foxes.git
-cd snakes_and_foxes
+## Run Locally
+
+```bash
+uv sync
+uv run uvicorn snakes_and_foxes.app:app --reload
 ```
 
-2. Install the required dependencies:
-```
-pip install -r requirements.txt
-```
+Open `http://127.0.0.1:8000`.
 
-## How to Play
+## Quality Checks
 
-1. Run the game:
-```
-python main.py
+```bash
+uv run pytest
+uv run ruff check
 ```
 
-2. Command-line options:
+## Project Layout
+
+- `src/snakes_and_foxes/app.py`: FastAPI app and HTML entrypoint
+- `src/snakes_and_foxes/api/routes.py`: JSON API routes
+- `src/snakes_and_foxes/domain/`: rules engine and models
+- `src/snakes_and_foxes/templates/index.html`: app shell
+- `src/snakes_and_foxes/static/`: CSS and browser code
+- `tests/`: domain and API tests
+
+## Git History Cleanup
+
+This repo used to track `venv/` and Python cache artifacts. The cleanup process is:
+
+```bash
+git fetch --all --prune
+git reset --hard origin/main
 ```
-python main.py --circles 6 --nodes 10
-```
-Where:
-- `--circles`: Number of concentric circles (default: 6)
-- `--nodes`: Number of nodes per circle (default: 10)
 
-3. Game Controls:
-   - Press SPACE to roll the dice
-   - Click on a highlighted node to move (valid moves are highlighted in yellow)
-   - Press R to restart the game after winning or losing
-
-## Features
-
-- Concentric circle board with customizable number of circles and nodes
-- Dice rolling mechanism
-- Special spaces (snakes and foxes) that affect player movement
-- Directional movement that alternates between circles
-- Win condition requiring visiting the outer circle before returning to center
-- Lose condition after exceeding maximum turns
-- Visual highlighting of valid moves
-- Simple and intuitive UI
-
-## Project Structure
-
-- `main.py`: Entry point for the game
-- `game.py`: Game engine and logic
-- `board.py`: Board representation and rendering
-- `player.py`: Player class for movement and position tracking
-- `dice.py`: Dice rolling functionality
-- `tests/`: Unit tests for game components
+If your local clone predates the history rewrite, the simplest recovery path is to reclone the repository.

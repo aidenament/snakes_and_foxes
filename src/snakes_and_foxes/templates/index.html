@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snakes and Foxes</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}" />
+    <script defer type="module" src="{{ url_for('static', path='js/app.js') }}"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="hud">
+        <div class="brand-card">
+          <p class="eyebrow">Wheel of Time</p>
+          <h1>Snakes and Foxes</h1>
+          <p class="subtitle">A browser-playable hunt across carved rings, parchment, and fate.</p>
+        </div>
+
+        <section class="panel controls-panel">
+          <div class="button-row">
+            <button id="new-game-btn" class="btn accent">New game</button>
+            <button id="roll-btn" class="btn">Roll dice</button>
+            <button id="help-btn" class="btn ghost">Rules</button>
+          </div>
+          <p id="status-text" class="status-line">Preparing the board...</p>
+        </section>
+
+        <section class="panel stats-grid">
+          <div>
+            <span class="label">Active piece</span>
+            <strong id="active-piece-text">-</strong>
+          </div>
+          <div>
+            <span class="label">Phase</span>
+            <strong id="phase-text">-</strong>
+          </div>
+          <div>
+            <span class="label">Turn</span>
+            <strong id="turn-text">-</strong>
+          </div>
+          <div>
+            <span class="label">Seed</span>
+            <strong id="seed-text">-</strong>
+          </div>
+        </section>
+
+        <section class="panel dice-panel">
+          <h2>Dice</h2>
+          <div id="dice-tray" class="dice-tray"></div>
+          <div class="dice-summary">
+            <span id="moves-text">Moves: 0</span>
+            <span id="foxes-text">Foxes: 0</span>
+            <span id="snakes-text">Snakes: 0</span>
+          </div>
+        </section>
+
+        <section class="panel pieces-panel">
+          <h2>Pieces</h2>
+          <div id="pieces-list" class="pieces-list"></div>
+        </section>
+
+        <section class="panel timeline-panel">
+          <div class="panel-header">
+            <h2>Event log</h2>
+            <button id="resume-btn" class="btn ghost small">Resume saved</button>
+          </div>
+          <ol id="event-log" class="event-log"></ol>
+        </section>
+      </aside>
+
+      <main class="board-stage">
+        <div class="board-frame">
+          <canvas id="board-canvas" width="1080" height="920" aria-label="Snakes and Foxes board"></canvas>
+          <div id="overlay" class="overlay">
+            <div class="overlay-card">
+              <p class="eyebrow">The ancient board waits</p>
+              <h2>Guide one piece to the rim and back again.</h2>
+              <p>
+                Sun and Moon alternate turns. Foxes move first, snakes move second,
+                and both hunt only the active piece.
+              </p>
+              <div class="button-row">
+                <button id="start-btn" class="btn accent">Enter the game</button>
+                <button id="overlay-help-btn" class="btn ghost">Read the rules</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="help-dialog" class="help-dialog">
+      <form method="dialog" class="help-sheet">
+        <h2>How the board works</h2>
+        <ul>
+          <li>Black pips grant one move each.</li>
+          <li>From the center you may step to any node on the first ring.</li>
+          <li>Every other ring allows one forward move, one inward move, and one outward move.</li>
+          <li>Either surviving piece wins by touching the outer ring and returning to center later.</li>
+          <li>Foxes and snakes chase only the active piece using board distance.</li>
+        </ul>
+        <button class="btn accent" value="close">Close</button>
+      </form>
+    </dialog>
+  </body>
+</html>
