@@ -4,102 +4,159 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Snakes and Foxes</title>
+    <link
+      rel="preload"
+      href="{{ url_for('static', path='fonts/fraunces-latin.woff2') }}"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="{{ url_for('static', path='fonts/manrope-latin.woff2') }}"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}" />
     <script defer type="module" src="{{ url_for('static', path='js/app.js') }}"></script>
   </head>
   <body>
-    <div class="page-shell">
-      <aside class="hud">
-        <div class="brand-card">
-          <p class="eyebrow">Wheel of Time</p>
+    <div class="app-shell">
+      <main class="game-card">
+        <header class="topbar">
           <h1>Snakes and Foxes</h1>
-          <p class="subtitle">A browser-playable hunt across carved rings, parchment, and fate.</p>
-        </div>
+        </header>
 
-        <section class="panel controls-panel">
-          <div class="button-row">
-            <button id="new-game-btn" class="btn accent">New game</button>
-            <button id="roll-btn" class="btn">Roll dice</button>
-            <button id="help-btn" class="btn ghost">Rules</button>
-          </div>
-          <p id="status-text" class="status-line">Preparing the board...</p>
-        </section>
+        <section class="game-workspace">
+          <aside class="side-rail side-rail-left">
+            <section class="panel panel-summary">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Active piece</p>
+                  <h2 id="active-piece-text">White</h2>
+                </div>
+              </div>
+              <div class="summary-stack">
+                <article class="summary-block">
+                  <span class="chip-label">Phase</span>
+                  <strong id="phase-text">Opening setup</strong>
+                </article>
+                <article class="summary-block summary-block-emphasis">
+                  <span class="chip-label">Instruction</span>
+                  <strong id="status-text">Preparing the board.</strong>
+                  <p id="turn-summary-text" class="turn-summary">
+                    White is active. Reach the outer ring, then return to the center.
+                  </p>
+                </article>
+                <article class="summary-block">
+                  <span class="chip-label">Objective</span>
+                  <p class="board-caption">
+                    Get to the outer ring and return to the center.
+                  </p>
+                </article>
+              </div>
+            </section>
 
-        <section class="panel stats-grid">
-          <div>
-            <span class="label">Active piece</span>
-            <strong id="active-piece-text">-</strong>
-          </div>
-          <div>
-            <span class="label">Phase</span>
-            <strong id="phase-text">-</strong>
-          </div>
-          <div>
-            <span class="label">Turn</span>
-            <strong id="turn-text">-</strong>
-          </div>
-          <div>
-            <span class="label">Seed</span>
-            <strong id="seed-text">-</strong>
-          </div>
-        </section>
+            <section class="panel panel-legend">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Board guide</p>
+                  <h2>Ring directions</h2>
+                </div>
+              </div>
+              <div class="board-legend" aria-label="Board guide">
+                <span class="legend-chip legend-red">Red rings: counter-clockwise</span>
+                <span class="legend-chip legend-green">Green rings: clockwise</span>
+                <span class="legend-chip legend-blue">Blue outer ring: both ways</span>
+              </div>
+            </section>
+          </aside>
 
-        <section class="panel dice-panel">
-          <h2>Dice</h2>
-          <div id="dice-tray" class="dice-tray"></div>
-          <div class="dice-summary">
-            <span id="moves-text">Moves: 0</span>
-            <span id="foxes-text">Foxes: 0</span>
-            <span id="snakes-text">Snakes: 0</span>
-          </div>
-        </section>
+          <section class="board-panel">
+            <div class="board-stack" id="board-shell">
+              <svg
+                id="board-svg"
+                class="board-svg"
+                viewBox="0 0 900 900"
+                aria-label="Snakes and Foxes board"
+                role="img"
+              ></svg>
+              <div id="token-layer" class="token-layer" aria-hidden="true"></div>
 
-        <section class="panel pieces-panel">
-          <h2>Pieces</h2>
-          <div id="pieces-list" class="pieces-list"></div>
-        </section>
-
-        <section class="panel timeline-panel">
-          <div class="panel-header">
-            <h2>Event log</h2>
-            <button id="resume-btn" class="btn ghost small">Resume saved</button>
-          </div>
-          <ol id="event-log" class="event-log"></ol>
-        </section>
-      </aside>
-
-      <main class="board-stage">
-        <div class="board-frame">
-          <canvas id="board-canvas" width="1080" height="920" aria-label="Snakes and Foxes board"></canvas>
-          <div id="overlay" class="overlay">
-            <div class="overlay-card">
-              <p class="eyebrow">The ancient board waits</p>
-              <h2>Guide one piece to the rim and back again.</h2>
-              <p>
-                Sun and Moon alternate turns. Foxes move first, snakes move second,
-                and both hunt only the active piece.
-              </p>
-              <div class="button-row">
-                <button id="start-btn" class="btn accent">Enter the game</button>
-                <button id="overlay-help-btn" class="btn ghost">Read the rules</button>
+              <div id="overlay" class="stage-overlay">
+                <div class="overlay-card">
+                  <p id="overlay-eyebrow" class="eyebrow">Opening board</p>
+                  <h2 id="overlay-title">Start a clean run from the center.</h2>
+                  <p id="overlay-body">
+                    Both pieces begin together at center. Reach the outer ring, then return to the center.
+                  </p>
+                  <div class="overlay-actions">
+                    <button id="start-btn" class="btn btn-primary">Start new game</button>
+                    <button id="overlay-resume-btn" class="btn btn-secondary">Resume saved</button>
+                    <button id="overlay-help-btn" class="btn btn-secondary">Rules</button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
+
+          <aside class="side-rail side-rail-right">
+            <section class="panel panel-controls">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Dice</p>
+                  <h2>Current roll</h2>
+                </div>
+              </div>
+              <div id="dice-tray" class="dice-tray" aria-label="Dice roll"></div>
+              <div class="button-row">
+                <button id="roll-btn" class="btn btn-primary">Roll</button>
+                <button id="new-game-btn" class="btn btn-secondary">New game</button>
+                <button id="resume-btn" class="btn btn-secondary">Resume saved</button>
+                <button id="help-btn" class="btn btn-secondary">Rules</button>
+              </div>
+            </section>
+          </aside>
+        </section>
       </main>
     </div>
 
-    <dialog id="help-dialog" class="help-dialog">
-      <form method="dialog" class="help-sheet">
-        <h2>How the board works</h2>
-        <ul>
-          <li>Black pips grant one move each.</li>
-          <li>From the center you may step to any node on the first ring.</li>
-          <li>Every other ring allows one forward move, one inward move, and one outward move.</li>
-          <li>Either surviving piece wins by touching the outer ring and returning to center later.</li>
-          <li>Foxes and snakes chase only the active piece using board distance.</li>
-        </ul>
-        <button class="btn accent" value="close">Close</button>
+    <dialog id="help-dialog" class="dialog-shell">
+      <form method="dialog" class="dialog-card">
+        <div class="dialog-header">
+          <p class="eyebrow">Rules</p>
+          <h2>Board logic at a glance</h2>
+        </div>
+          <div class="rules-grid">
+            <div class="rule-block">
+              <h3>Opening setup</h3>
+              <p>White and Black begin in the hub. The outer ring is fully occupied, alternating fox then snake around all sixteen spokes.</p>
+            </div>
+            <div class="rule-block">
+              <h3>Rolling</h3>
+              <p>Roll all six dice each turn. Black pips give your piece moves, red triangles activate foxes, and green squiggles activate snakes. On the opening throw, reroll until at least one black pip appears.</p>
+            </div>
+            <div class="rule-block">
+              <h3>Movement</h3>
+              <p>Spend every move exactly. You may reverse along spokes, but ring movement must still follow that ring's allowed direction.</p>
+            </div>
+            <div class="rule-block">
+            <h3>Ring directions</h3>
+            <div class="ring-legend">
+              <span class="legend-chip legend-red">Red rings: counter-clockwise</span>
+              <span class="legend-chip legend-green">Green rings: clockwise</span>
+              <span class="legend-chip legend-blue">Blue outer ring: both ways</span>
+            </div>
+          </div>
+          <div class="rule-block">
+            <h3>Enemy order</h3>
+            <p>After the active piece finishes moving, foxes resolve first and snakes resolve second. Each activated enemy moves one step toward the active piece.</p>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-primary" value="close">Close</button>
+        </div>
       </form>
     </dialog>
   </body>

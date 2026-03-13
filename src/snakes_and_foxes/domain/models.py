@@ -11,8 +11,8 @@ class StrictModel(BaseModel):
 
 
 class BoardConfig(StrictModel):
-    circle_count: int = 6
-    nodes_per_circle: int = 10
+    circle_count: int = 8
+    nodes_per_circle: int = 16
 
     @field_validator("circle_count")
     @classmethod
@@ -58,6 +58,8 @@ class PieceState(StrictModel):
     node: NodeId
     alive: bool = True
     reached_outer: bool = False
+    turns_taken: int = 0
+    post_outer_rolls: int = 0
 
 
 class EnemyType(StrEnum):
@@ -114,13 +116,14 @@ class GameState(StrictModel):
     turn_number: int = 1
     roll_index: int = 0
     phase: TurnPhase = TurnPhase.WAITING_FOR_ROLL
-    active_piece_id: str = "sun"
+    active_piece_id: str = "white"
     pieces: list[PieceState]
     enemies: list[EnemyState]
     dice_roll: DiceRoll | None = None
     moves_remaining: int = 0
     pending_enemy_moves: PendingEnemyMoves = Field(default_factory=PendingEnemyMoves)
     legal_moves: list[NodeId] = Field(default_factory=list)
+    turn_path: list[NodeId] = Field(default_factory=list)
     winner_piece_id: str | None = None
     event_log: list[EventLogEntry] = Field(default_factory=list)
 
@@ -134,13 +137,18 @@ class ActionResult(StrictModel):
 
 
 class NewGameRequest(StrictModel):
-    seed: int | None = None
-    board: BoardConfig = Field(default_factory=BoardConfig)
+    seed: int | None = Field(default=None, ge=1, le=2_147_483_647)
 
 
 class NewGameResponse(StrictModel):
     state: GameState
     result: ActionResult
+    csrf_token: str
+
+
+class CurrentGameResponse(StrictModel):
+    state: GameState
+    csrf_token: str
 
 
 class RollAction(StrictModel):
@@ -160,10 +168,10 @@ Action = Annotated[RollAction | MoveAction | RestartAction, Field(discriminator=
 
 
 class ActionRequest(StrictModel):
-    state: GameState
     action: Action
 
 
 class ActionResponse(StrictModel):
     state: GameState
     result: ActionResult
+    csrf_token: str
